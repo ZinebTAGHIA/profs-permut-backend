@@ -194,14 +194,21 @@ app.post("/forget", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 app.put("/professeurs/:email", async (req, res) => {
   const { email } = req.params;
   const updateFields = req.body;
-
+  console.log(updateFields);
   try {
-    const professeur = await Professeur.findByIdAndUpdate(email, updateFields, {
-      new: true,
-    });
+    if (updateFields.password) {
+      const salt = await bcrypt.genSalt(10);
+      // Hasher le mot de passe
+      const hashedPassword = await bcrypt.hash(updateFields.password, salt);
+      updateFields.password = hashedPassword;
+    }
+    const professeur = await Professeur.findOne({ email }).updateOne(
+      updateFields
+    );
 
     if (!professeur) {
       return res.status(404).json({ message: "Professeur not found" });
@@ -212,6 +219,7 @@ app.put("/professeurs/:email", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 app.delete("/professeurs/:email", async (req, res) => {
   const { email } = req.params;
   try {
